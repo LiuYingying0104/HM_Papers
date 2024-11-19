@@ -97,6 +97,16 @@ based on DNN topology[7-10] / detailed domain knowledge [5][6][11]
 假设：应该也是基于静态的computation graph的
 
 [TMOF](TMOF.pdf) HPCA'23
+要解决的问题：用host memory作为external memory来swap tensor，但是在data-parallel training system中效果不佳。
+提到的其他方法1： swapping-based techniques [16,19,20,36,41]
+Graph execution ML framework (tensorflow1.0) swapping 是offline的 [16,20]
+Eager execution ML framework: [19,36] 也是预先定义的，说19是超出了capacity都swap，36是在第一个training iteration的时候profile
+认为他们不好的点：design for single-GPU systems 如果apply到data-parallel system中的话，会引起PCIe channel的争用
+方法：online和offline都有。online的部分跟[36]很像，swap-out reuse distance比较大的；offline 用dynamic profiling
+contention-avoidance techniques: disjoint swapping (select disjoint sets of swapped-out tensors for different GPU nodes) + bidirectional overlapping (sheduele swap out and swap-in together)
+假设：DNN，面向pytorch。感觉它的performance gain基本上来自于contention-avoidance
+
+
 [DeepUM](DeepUM.pdf) ASPLOS'23
 [G10](G10.pdf) MICRO'23
 [HOME](HOME.pdf) IEEE Transaction on Computers 23
@@ -124,3 +134,8 @@ Instruction：
 这一派最适合什么时候使用、最不适合什么场合使用
 
 
+不同的场景：
+1. high-end data centers
+2. common computing platform for researchers and developers
+
+感觉很多都没有考虑OS方面的
