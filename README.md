@@ -13,6 +13,8 @@
 提到的其他方法2：memory management between CPU and GPU [8][44]
 方法：提出一个framework，automatically move data between heterogenous memory devices. (compiler-based)
 假设条件：computational graph is static (no data-dependent control behavior)
+别的文章觉得它不好的点：kernel computation and its tensor accesses are coupled as one execution unit. 
+Tensor-swap operation cannot be decoupled from its kernel, thereby losing an optimization opportunity of overlaping tensor swapping with an independent kernel's execution.
 
 [SwapAdvisor](SwapAdvisor.pdf) ASPLOS'20
 要解决的问题：模型太大，GPU memory不够，existing work不够general，无法适应所有的models
@@ -44,8 +46,8 @@ joint optimization over operator scheduling, memory allocation and swapping
 2. major memory footprint in DNN training 是来自于intermediate layer outputs [13][24]
 3. 不基于computation graph （适用于imperative programming environment）
 其他：文章把model的memory consumption分成三个类别：feature maps / gradient maps/ convolution workspace （model parameters占比很小）
-Programming中有两个mode：1. eager mode（对应于imperative programming），不生成计算图，但是因为没有optimization/需要interpret python code，所以overhead大
-2. graph mode（对应于declarative programming）before execution，computation graph is built
+Programming中有两个mode：1. eager mode（对应于imperative programming），不生成计算图，但是因为没有optimization/需要interpret python code，所以overhead大 （例子：PyTorch/Tensorflow2.0）
+2. graph mode（对应于declarative programming）before execution，computation graph is built （例子：TensorFlow1.0）
 
 [Sentinel](Sentinel.pdf) HPCA'21
 要解决的问题：现在Heterogeneous Memory 越来越流行，用HM实现DNN training achieve larger memory capacity
@@ -98,23 +100,90 @@ based on DNN topology[7-10] / detailed domain knowledge [5][6][11]
 
 [TMOF](TMOF.pdf) HPCA'23
 要解决的问题：用host memory作为external memory来swap tensor，但是在data-parallel training system中效果不佳。
-提到的其他方法1： swapping-based techniques [16,19,20,36,41]
+提到的其他方法1： swapping-based techniques [16,19,20,36,41,43,47]
+其中[43]和[47]被认为是layer-wise （static computational graph）
+其他都是tensor-wise：
 Graph execution ML framework (tensorflow1.0) swapping 是offline的 [16,20]
 Eager execution ML framework: [19,36] 也是预先定义的，说19是超出了capacity都swap，36是在第一个training iteration的时候profile
 认为他们不好的点：design for single-GPU systems 如果apply到data-parallel system中的话，会引起PCIe channel的争用
 方法：online和offline都有。online的部分跟[36]很像，swap-out reuse distance比较大的；offline 用dynamic profiling
 contention-avoidance techniques: disjoint swapping (select disjoint sets of swapped-out tensors for different GPU nodes) + bidirectional overlapping (sheduele swap out and swap-in together)
 假设：DNN，面向pytorch。感觉它的performance gain基本上来自于contention-avoidance
-
+其他：关于distributed model training--BSP(bulk synchronous parallelism) 每个GPU有自己的gradient set，然后每n个training iterations之后gradient会累计
 
 [DeepUM](DeepUM.pdf) ASPLOS'23
+要解决的问题：用CUDA Unified Memory来解决GPU memory不够的问题
+提到的其他方法1：data compression [6, 10, 18, 26, 34], 
+提到的其他方法2： mixed-precision arithmetic [11, 17, 28]
+提到的其他方法3： data recomputation [8, 16, 55]
+提到的其他方法4： memory swapping [5, 6, 21, 24, 33, 45, 49–51, 55]
+这一个派别下有两个类：
+a. CUDA Unified Memory with page prefetching [5,35] 
+这个类别下工作比较少的原因：address translation和page fault handling的overhead比较大 （相当于是disadvantages） 因为Page Fault发生的时候TLB会被lock住，可以用cudaMemPrefetchAsync或者cudaMemAdvise
+好处：can handle larger DNN models / memory fragmentation
+b. pure GPU memory swapping-in/swapping out [6, 21, 24, 33, 45, 49–51, 55].
+假设：single GPU/ DNN，面向pytorch / CUDA / kernel execution patterns and their memory access patterns are mostly fixed and repeated in the DNN training workload.
+方法：1. correlation preferching 2. page pre-eviction 2. page invalidation in GPU memory (remove unnecessary memory traffic betwwen CPU and GPU)
+其他: 关于unified memory--CPU和GPU之间share single address space （也有其他名字，比如Virtual Memory, OpenCL, Intel oneAPI）
+换句话来说，single memory address space that can be accessed by both CPU and GPU / GPU 处理page fault是以UM Block为单位的（512 Pages)
+提出UM的motivation是GPU thread不能直接access CPU的memory space，所以需要programmer manually move。move的过程中会有PCIe上面overhead的问题
+
 [G10](G10.pdf) MICRO'23
+要解决的问题：hard to meet the scalability requirement of deep learning workloads
+提到的其他方法1：expand limited GPU memory with flash memory. [67,68,61,19,21] 这些感觉是偏向technique方面的，bring Flash closer to GPUs
+觉得他们不好的点：limited bandwidth by the PCIe interface
+提到的其他方法2：提出特殊的针对DNN的方法 move data across heterogeneous memories [12,25,27,34]
+觉得他们不好的点: complicates GPU memory management, hurt development productivity
+方法：integrate host memory, GPU memory and flash memory into a unified memory space / 用compiler technique to characterize the tensor behaviors
+看了代码，输入是转化过的code，类似于DNN网络结构信息，然后用静态分析等方法来计算
+其他：因为需要融合了SSD，所以需要修改driver。但是NVIDIA driver不开源，因此需要用到simulator 
+假设：single GPU，测试的是传统DNN和transformer
+
 [HOME](HOME.pdf) IEEE Transaction on Computers 23
+要解决的问题：GPU Memory not enough  
+提到的其他方法1：data compression
+觉得它不好的地方：loss accuracy / incur significant time overhead
+提到的其他方法2：Data swapping [14,15,16,23]
+提到的其他方法3：Data Recomputation [17]
+提到的其他方法4：swapping+recomputation [18,19]
+觉得它不好的地方：only consider partial DNN model information,18只局限在一部分种类的DNN，19的dataflow从第一层DNN来
+关于选择search algorithm:ILP复杂度太大，SA,BO,RL,MC容易陷入local optimal，并且没法parallel searching，所以用PSO
+方法：(novelty) consider holistic DNN model information; 三个action选一个--swapping recomputation retaining
+假设：面向pytorch; 没有在real hardware platform上部署，用了一个time-cost model来predict大概需要的时间
+
 [Occamy](Occamy.pdf) DAC'23
-[Fastensor](Fastensor.pdf) TACO'23
-[InfiniGen](InfiniGen.pdf) OSDI'24
+要解决的问题：reduce memory usage of DNN without affecting accuracy
+其他方法1：memory offloading [3,4,5,6]
+其他方法2：recomputation[4,6]
+其他方法3：tensor decomposition[6]
+其他方法4：model compression
+认为他们不好的地方：limit to DNN training or 需要programmer change model
+另一个类别（把memory allocation考虑进去的）：pytorch是在一开始就allocate所有的tensor，但忽略掉了memory size
+/ tensorflow Lite Micro和TASO 使用了reuse的策略，但会造成fragmentation的问题 [1,8,29,30,31]
+方法：设计了一个DNN compiler，感觉主要是在考虑memory allocate和deallocate上的优化；基于onnx-mlir compiler 
+跟之前的比没有runtime overhead。
+假设: DNN, 面向Pytorch
+
 [CachedArrays](CachedArrrays.pdf) IPDPS'24
-[MAGIS](MAGIS.pdf) TACO'24
+
+
+[MAGIS](MAGIS.pdf) ASPLOS'24
+要解决的问题：memory optimization for DNN
+第一类：graph scheduling
+其他的方法1：rematerialization [5,10,17,18,24,27–29,37,38,47]
+其他的方法2：swapping [5,20,22,30,37–39,41,42,57]
+其他的方法3: re-ordeing [3,22,58,72]
+认为他们不好的地方：overhead太大；没有改变tensor的形状，limit potential optimization space
+第二类：graph transformation [25,26,54,56,62] rule-based sub-graph substitution
+1. Aggregation transformation
+2. Interim transformation
+3. Fission transformation 
+认为他们不好的地方：complexity太大；trade-off: latency和memory
+
+
+面向LLM：
+[InfiniGen](InfiniGen.pdf) OSDI'24
+[FlexGen](FlexGen.pdf) ICML'23
 
 
 
@@ -138,4 +207,8 @@ Instruction：
 1. high-end data centers
 2. common computing platform for researchers and developers
 
-感觉很多都没有考虑OS方面的
+感觉很多都没有考虑OS方面的协作
+Design Method:
+1. Expert knowledge
+2. Heurestic (Greedy, ILP(high algorithm complexity), PSO)
+3. Meta-Heurestic (genetic)
