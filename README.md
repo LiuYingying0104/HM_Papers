@@ -1,3 +1,5 @@
+[cuDNN](cuDNN.pdf) 2014
+
 
 [vDNN](vDNN.pdf) MICRO'16
 要解决的问题：模型太大 GPU内存不够 reduce memory usage of neural network  
@@ -6,6 +8,54 @@
 提到的其他方法2：page-migration based virtualization [51][52][34]  
 觉得他们不好的点：underutilize PCIe bandwidth/performance overhead  
 方法：要么直接release，要么offload to CPU Memory 之后再prefetch回来  
+
+[Sublinear Cost](Sublinear%20Cost.pdf) 2016
+
+[BPTT](BPTT.pdf) NIPS'16
+
+[Thermostat](Thermostat.pdf) ASPLOS'17
+
+[Bandana](Bandana.pdf) MLsys'18
+
+[Superneurons](SuperNeurons.pdf) SIGPLAN'18
+
+[Chen Meng](Chen%20Meng.pdf)  In Proc. of ML Systems Workshop in NIPS.
+
+[moDNN](moDNN.pdf) DATE'18
+
+[Tflms](TFLMS.pdf) 2018
+
+[Gist](Gist.pdf) ISCA'18
+
+[DRAGON](DRAGON.pdf) SC'18
+
+[Layer-Centric](Layer-Centric.pdf) Archit. Code Optim 2018
+
+[Zhang Junzhe](Zhang%20Junzhe.pdf) 2019
+
+[Nimble](Nimble.pdf) ASPLOS'19
+
+[Layup](Layup.pdf) TACO'19
+
+[OC-DNN](OC-DNN.pdf) HiPC'19
+
+[CheckMate](checkmate.pdf) 2019
+
+[Buddy Compression](Buddy%20Compression.pdf) International Symposium on Computer Architecture, 2020
+
+IBM Large model support: 
+1. https://github.com/IBM/ 
+2. https://www.ibm.com/docs/en/wmlce/1.6.0?topic=gsmf-getting-started-tensorflow-large-model-support-tflms-v2
+
+[KARMA](KARMA.pdf) SC'20
+
+[AntMan](Antman.pdf) OSDI'20
+
+[DeepSpeed](DeepSpeed.pdf) KDD'20
+
+[GTBM](GTBM.pdf) HPDC'20
+
+[Sage](Sage.pdf) VLDB'20
 
 [AutoTM](AutoTM.pdf) ASPLOS'20
 要解决的问题：模型太大，DRAM不够
@@ -87,6 +137,28 @@ based on DNN topology[7-10] / detailed domain knowledge [5][6][11]
 3. Can we make large model training easier by eliminating the need for model refactoring and multiple forms of parallelism?
 方法：在heterogeneous memory上（GPU,CPU,DRAM）上allow model scale without requiring model code refactoring / memory-centric tiling 解决单层过大的问题/ bandwidth-centric partitioning 根据device带宽来决定分区/ overlap-centric design (把offload跟communication尽量并行运算)
 
+[Xupeng](Xupeng.pdf) SIGMOD'21
+
+[Oliver](Oliver.pdf) NIPS'21
+
+[FlashNeuron](FlashNeuron.pdf) FAST 21
+
+[KLOCs](KLOCs.pdf) ASPLOS'21
+
+[PET](PET.pdf) OSDI'21
+
+[DTR](DTR.pdf) ICLR'21
+
+[Bergman](Bergman.pdf) SIGPLAN'22
+
+[FlexHM](FlexHM.pdf) TACO'22
+
+[POET](POET.pdf) ICML'22
+
+[Unity](Unity.pdf) OSDI'22
+
+[MoNet](MoNet.pdf) ICLR'22
+
 [TSPLIT](TSPLIT.pdf) ICDE'22
 要解决的问题：DNN太大， device memory不够
 提到的方法1：distributed system [20-22]
@@ -164,8 +236,14 @@ b. pure GPU memory swapping-in/swapping out [6, 21, 24, 33, 45, 49–51, 55].
 跟之前的比没有runtime overhead。
 假设: DNN, 面向Pytorch
 
-[CachedArrays](CachedArrrays.pdf) IPDPS'24
+[Shaofu Lin](Shaofu%20Lin.pdf) HPCA'23
 
+[CachedArrays](CachedArrrays.pdf) IPDPS'24
+要解决的问题：data management in heterogeneous memory systems
+Algorithm: 7
+Application: 9, 13 (11,12,10,37) manually determine the reuse pattern and figure out a suitable data movement scheme to change the algorithm
+Compiler: 8, 3, 14, 15 scalability and generalization problems
+OS: 16-26 don't take into account future information about the data use and semantic information from the Application
 
 [MAGIS](MAGIS.pdf) ASPLOS'24
 要解决的问题：memory optimization for DNN
@@ -181,11 +259,15 @@ b. pure GPU memory swapping-in/swapping out [6, 21, 24, 33, 45, 49–51, 55].
 认为他们不好的地方：complexity太大；trade-off: latency和memory
 
 
+[GMT](GMT.pdf) ASPLOS'24
+要解决的问题：application working sets grow，GPU需要access much larger data capacities
+一类方法：UVM 问题：没有扩展到SSD
+一类方法：扩展到了SSD的 问题：没有绕过CPU的控制，不能直接访问SSD
+
+
 面向LLM：
 [InfiniGen](InfiniGen.pdf) OSDI'24
 [FlexGen](FlexGen.pdf) ICML'23
-
-
 
 Instruction：
 读introduction和abstract：
