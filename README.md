@@ -1,5 +1,6 @@
 [cuDNN](cuDNN.pdf) 2014
-
+optimized implementations for deep learning primitives
+方法：C-language API for deep learning workloads
 
 [vDNN](vDNN.pdf) MICRO'16
 要解决的问题：模型太大 GPU内存不够 reduce memory usage of neural network  
@@ -10,18 +11,81 @@
 方法：要么直接release，要么offload to CPU Memory 之后再prefetch回来  
 
 [Sublinear Cost](Sublinear%20Cost.pdf) 2016
+要解决的问题：reduce memory consumption of DNN training
+方法：用computation换memory, drop intermediate result. 针对于CNN和RNN
+提到的其他方法1： swapping 
+提到的其他方法2： parallel training
+认为自己这一派好的原因：doesn't need additional communication over PCI-E/ save bandwidth
+statement：size of parameters are relatively small comparing to size of the intermediate feature maps
 
 [BPTT](BPTT.pdf) NIPS'16
+要解决的问题：reduce memory consumption through backpropogation for RNN.
+方法：dynamic programming
+优点： tightly fit to almost any user-specified memory constraints
+其实也是trade memory for computation time
 
 [Thermostat](Thermostat.pdf) ASPLOS'17
+要解决的问题：memory placement policy. 有新的storage technique，利用好two-tier memory system可以有net cost的improvement
+其他的方法： naive policy（place pages into slow memory based on Access bits）
+觉得它不好的地方：severe performance degradation
+two-tier memory的两种做法：
+1. paging mechanism 
+2. migration mechanism 
+假设：application transparent（critical for cloud computing environment）
+方法：huge page aware/ place or migrate pages 
+具体做法：continuously sample small fraction of pages, estimates page access rate by spatial extrapolation
+用TLB miss的信息 as proxy for LLC misses/ correction mechanism.
 
 [Bandana](Bandana.pdf) MLsys'18
+要解决的问题：reduce DRAM footprint of embeddings；two-tier memory--DRAM & NVM
+方法：
+1. 把会一起读的store在一起；（我觉得是相当于把vector怎么分布成为一个block）
+2. 用simulating来决定哪些存在DRAM里 （根据已经access的次数，选择一个合适的threshold）
+文中的发现：如果要maximize bandwidth，需要4KB以上的read
+假设：需要用到past access patterns of embedding vectors，针对的是facebook的recommandation DNN，没有普适性
 
 [Superneurons](SuperNeurons.pdf) SIGPLAN'18
+要解决的问题: GPU DRAM size limitation
+方法: dynamic GPU memory scheduling runtime，把tensor作为unit，也有offload的部分
+提到的其他方法1：static memory reduction （Caffe 和tensorflow内置的）
+认为不好的点：不支持non-linear neural network，没有考虑memory variations
+提到的其他方法2：split the network across GPUs (model parallelism)
+认为不好的点：需要excessive communications--现在也有replica model的，但是也需要fit in GPU DRAM，没有利用NUMA架构
+提到的其他方法3：MXNet，Tensorflow 用DAG去分析tensor的life span
+提到的其他方法4：recompute
+觉得不好的地方：没考虑dependency，只考虑了per-layer的cost，如果有复杂的依赖关系，可能会增加cost
+提到的其他方法5：swap long-lived data from GPU to CPU, 没好好利用data communications
+所有的：没有把memory和training speed平衡好
 
 [Chen Meng](Chen%20Meng.pdf)  In Proc. of ML Systems Workshop in NIPS.
+要解决的问题：model size too big for a single GPU
+方法： dataflow-graph based/swapping 有特别针对于seq2seq的优化 / integrate into tensorflow 
+提到的其他方法：model parallelism
+认为不好的地方：bring communication overhead 
+假设：feature maps占据主要内存消耗的部分
+提到的其他方法2：Tensorflow重内置的best-fit with coalescing
+认为不好的地方：没有memory optimization for training big models
+提到的其他方法3：Unified Memory
+认为不好的地方：sever performance loss
+提到的其他方法4：offloading 
+认为不好的地方：layer-wise CNN，不能用在sequence model上面
+提到的其他方法5：re-computation （MXNet）
+认为不好的地方：对于dynamic memory allocation，没法直接用
 
 [moDNN](moDNN.pdf) DATE'18
+要解决的问题：optimize memory usage in DNN training 
+方法：修改DNN training code to match any given memory budget / offloading + prefetching /新的策略可以省memory
+把4的几种结合起来
+提到的其他方法1：network pruning -- loss accuracy，weights只占一小部分
+提到的其他方法2：precision reduction -- loss accuracy，没有理论保证accuracy会被影响多少
+提到的其他方法3：output re-computation -- longer training time
+提到的其他方法4：static memory allocation/ batch partitoning/ out-of-core training
+out-of-core的缺点：previous只有一个vDNN,太直接了
+batch partitioning: 留给user的
+static memory allocation的缺点（我的理解）：
+1. data会根据live intervals被分到不一样的buffer中，但是每个时刻buffer不一定都是满的，但分配的时候算的是总和
+个人觉得这里的缺点主要来自基于static allocation
+2. long live interval的会一直占据资源不释放，占据了很多内存。个人觉得跟recompute的好处 或者offload的好处是对应的。
 
 [Tflms](TFLMS.pdf) 2018
 
@@ -263,6 +327,8 @@ OS: 16-26 don't take into account future information about the data use and sema
 要解决的问题：application working sets grow，GPU需要access much larger data capacities
 一类方法：UVM 问题：没有扩展到SSD
 一类方法：扩展到了SSD的 问题：没有绕过CPU的控制，不能直接访问SSD
+
+[DeepTM](DeepTM.pdf)  IEEE TRANSACTIONS ON PARALLEL AND DISTRIBUTED SYSTEMS 2-24
 
 
 面向LLM：
