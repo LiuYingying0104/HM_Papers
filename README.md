@@ -88,12 +88,47 @@ static memory allocation的缺点（我的理解）：
 2. long live interval的会一直占据资源不释放，占据了很多内存。个人觉得跟recompute的好处 或者offload的好处是对应的。
 
 [Tflms](TFLMS.pdf) 2018
+要解决的问题：GPU memory limitation for large DNN
+方法：rewrite computational graph of a NN, swapping/ module in Tensorflow
+其他方法1：reuse memory regions / compress a neural network/ use low precision
+其他方法2：re-compute
+其他方法3: use external memory such as CPU memory for temporarily storing intermediate results during training.
+觉得3好的原因：可以训练更大的模型 / 可以apply到any neural network上
+其他方法4：unified Memory (performance very pool)
 
 [Gist](Gist.pdf) ISCA'18
+要解决的问题：GPU main memory bottleneck
+方法：DNN-layer-specific optimizations to reduce feature maps / encode representation and decode when use in backpropogation
+其他方法1：reduce model size
+认为不好的地方：only a small fraction of total memory footprint / lower precision reduce training accuracy
+其他方法2：swapping
+认为不好的地方：performance cost / use PCIe links 特别是对于distributed DNN training来说
+其他方法3：reduce minibatch size
+认为不好的地方：memory costly but power hungry
+其他方法4：re-compute
+认为不好的地方：long time re-compute
 
 [DRAGON](DRAGON.pdf) SC'18
+要解决的问题：dataset太大，需要用NVMe设备
+方法：unified memory 用page fault 
+提到的其他方法1：hardware -- hardware modification
+提到的其他方法2：OS-level -- considerable overhead
+提到的其他方法3：application-based -- limited to specific class of applications
+UM--memory limited by host memory
+提到的其他方法4： 写了一个custom NVMe driver, 可以直接在GPU喝NVM之间用RDMA传输数据，但是有内存限制（global memory）
 
+在related work中的分类：
+1. compiler-based techniques: anlyze data flow, inject code to automatically partition parallel loops and tasks into smaller region, and map them into CPU and GPU 
+2. software-based approaches: user-level APIs along with runtimes 缺点：调用API时比较麻烦
+3. OS and hardware-level: memory management with hardware modifications
+   
 [Layer-Centric](Layer-Centric.pdf) Archit. Code Optim 2018
+要解决的问题：running an extreme-scale model in a signgle GPU 
+方法：runtime data placement strategy 
+其他方法1：partition and distribute the modesl over multiple GPUs
+认为不好的地方：not cost-effective due to excessive communication / guarantee convergence 
+
+
 
 [Zhang Junzhe](Zhang%20Junzhe.pdf) 2019
 
