@@ -122,37 +122,109 @@ UM--memory limited by host memory
 2. software-based approaches: user-level APIs along with runtimes 缺点：调用API时比较麻烦
 3. OS and hardware-level: memory management with hardware modifications
    
-[Layer-Centric](Layer-Centric.pdf) Archit. Code Optim 2018
+[Layer-Centric](Layer-Centric.pdf) Archit. Code Optim 2018 (bad writing**)
 要解决的问题：running an extreme-scale model in a signgle GPU 
-方法：runtime data placement strategy 
+方法：runtime data placement strategy, memory reuse
+其他方法1：model quantization and compression/ network pruning
+问题：performance degradation
+其他方法2：CPU-GPU transfer
+其他方法3：computation graph analysis
+
 其他方法1：partition and distribute the modesl over multiple GPUs
 认为不好的地方：not cost-effective due to excessive communication / guarantee convergence 
+其他方法2：memory pool （store intermediate data between GPU and CPU memory）
+其他方法3： extra computation 
 
-
+把layer分成几个类别：
+1. Feature extraction layer
+2. Activation function layer (sigmoid ReLU)
+3. Loss function layer 
+4. Regularization function layer (dropout / batch normalization)
 
 [Zhang Junzhe](Zhang%20Junzhe.pdf) 2019
+要解决的问题：GPU limited memory size
+其他方法1: model compression
+问题：degrade model accuracy
+其他方法2: memory swapping
+问题：require manual intervention
+其他方法3: data partition
+问题：适用于data access是regular的情况
+其他方法4：memory Sharing
+可以分为两种，一种是in-place operation，另一种是把lifetime不重合的东西存在一个memory block上，这个需要entire computation Graph
+其他方法5：recompute
+问题：也是需要computation graph
+方法：1.optimize memory allocation based on lifetime of all variables 2. swapping 
+
+其他知识：memory pool (take over memory management from OS)
+paging on GPU 需要改硬件/driver 
+
 
 [Nimble](Nimble.pdf) ASPLOS'19
+要解决的问题：page migration for tiered memory system
 
-[Layup](Layup.pdf) TACO'19
+[Layup](Layup.pdf) TACO'19 (这篇写得挺细的)
+要解决的问题：GPU memory limitation
+其他方法1：model parallel (divide-and-conquer strategy)
+问题：introduce much more complexity into the construction of distriburted models 
+其他方法2：reduce memory consumption (CPU-GPU transfer / re-compute)
+问题：layer type affacts execution time / no consideration of worspace data
+其他方法3： model compression（pruning/ quantification）适用于embedded devices 
+觉得superneuron不好的地方：does not consider the difference in execution time between the CPU-GPU transfer and the extra forward computation for different layer types.
+假设：基于single GPU 
+方法：multi-type data reuse 
 
-[OC-DNN](OC-DNN.pdf) HiPC'19
+[OC-DNN](OC-DNN.pdf) HiPC'19 (有点没看懂)
+要解决的问题：out-of-core DNN training, GPU memory limitation
+vDNN的limitation：需要manual effort
+Unified memory：time performance
+假设：single GPU
+方法： develop UM primitives.
 
 [CheckMate](checkmate.pdf) 2019
+Automatic rematerialize large neural network optimally (应该就是re-compute)
+goal: fit in an arbitrary network with memory budget while incurring the minimal additional runtime penalty from recomputation
+其他方法1：checkpointing and rematerialization
+其他方法2：reversible networks
+其他方法3：distributed computation
+其他方法4：activation compression (reduce accuracy)
+假设：需要computation graph 
 
 [Buddy Compression](Buddy%20Compression.pdf) International Symposium on Computer Architecture, 2020
+Goal: increase effective GPU memory capacity and bandwidth.
+方法：memory compression 采用一种分级压缩策略，按数据的重要性和冗余性分层处理，动态调整压缩比。
+显存中的数据被分为多个小块（例如 128 字节块），每个块单独进行压缩和解压缩。
+根据压缩效率和内存压力，动态选择是否启用压缩。
 
 IBM Large model support: 
 1. https://github.com/IBM/ 
 2. https://www.ibm.com/docs/en/wmlce/1.6.0?topic=gsmf-getting-started-tensorflow-large-model-support-tflms-v2
 
 [KARMA](KARMA.pdf) SC'20
+其他方法1：model parallelism （viable approach to...）
+问题：significant modifictaion of source code / complex, intrusive and enforce a non-trival bound on minimum number of GPUs for large models
+其他的方法2：out-of-core (swapping)
+问题：no efficient prefetching/ 同步的开销等  会带来performance overhead 
+其他方法3：recompute
+问题：有bound / could not be used to improve performance in distributed training / swap 放在distribute上面会有冲突
+方法： layer swapping+redundant recomputing / support multi-GPU 
 
 [AntMan](Antman.pdf) OSDI'20
+schedule deep learning jobs on large-scale GPUs 
 
 [DeepSpeed](DeepSpeed.pdf) KDD'20
+tutorial: fastest BERT training
 
 [GTBM](GTBM.pdf) HPDC'20
+要解决的问题：GPU memory limitation
+属于的派别：offloading and prefetching feature maps
+其他方法1：reduce model size
+问题：loss in training accuracy / parameter weights only account for a small frection
+其他方法2：memory compression / data encoding 
+问题：high performance overhead 
+其他方法3：swapping
+问题：1-vDNN和superneurons的缺点：不适用于non-linear networks 
+2-memory fragmentation problem （which has different data size, varied resident duration, and dynamic reference counts, interleave with layers which have simple dependencies)
+
 
 [Sage](Sage.pdf) VLDB'20
 
@@ -192,11 +264,11 @@ joint optimization over operator scheduling, memory allocation and swapping
 方法：make memory management decision based on dynamic tensor access pattern tracked runtime/ tensor-based
 做三个事情：prefetch/evict/recompute
 基于的假设/obsevation：1. 在training iteration的时候access patterns to tensor是固定的
-2. major memory footprint in DNN training 是来自于intermediate layer outputs [13][24]
-3. 不基于computation graph （适用于imperative programming environment）
+1. major memory footprint in DNN training 是来自于intermediate layer outputs [13][24]
+2. 不基于computation graph （适用于imperative programming environment）
 其他：文章把model的memory consumption分成三个类别：feature maps / gradient maps/ convolution workspace （model parameters占比很小）
 Programming中有两个mode：1. eager mode（对应于imperative programming），不生成计算图，但是因为没有optimization/需要interpret python code，所以overhead大 （例子：PyTorch/Tensorflow2.0）
-2. graph mode（对应于declarative programming）before execution，computation graph is built （例子：TensorFlow1.0）
+1. graph mode（对应于declarative programming）before execution，computation graph is built （例子：TensorFlow1.0）
 
 [Sentinel](Sentinel.pdf) HPCA'21
 要解决的问题：现在Heterogeneous Memory 越来越流行，用HM实现DNN training achieve larger memory capacity
