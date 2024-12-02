@@ -225,8 +225,8 @@ tutorial: fastest BERT training
 问题：1-vDNN和superneurons的缺点：不适用于non-linear networks 
 2-memory fragmentation problem （which has different data size, varied resident duration, and dynamic reference counts, interleave with layers which have simple dependencies)
 
-
 [Sage](Sage.pdf) VLDB'20
+parallel graph analytics
 
 [AutoTM](AutoTM.pdf) ASPLOS'20
 要解决的问题：模型太大，DRAM不够
@@ -269,6 +269,7 @@ joint optimization over operator scheduling, memory allocation and swapping
 其他：文章把model的memory consumption分成三个类别：feature maps / gradient maps/ convolution workspace （model parameters占比很小）
 Programming中有两个mode：1. eager mode（对应于imperative programming），不生成计算图，但是因为没有optimization/需要interpret python code，所以overhead大 （例子：PyTorch/Tensorflow2.0）
 1. graph mode（对应于declarative programming）before execution，computation graph is built （例子：TensorFlow1.0）
+假设：checkpointing scheme依赖于static model architecture (or infer from an initial profiling batch)
 
 [Sentinel](Sentinel.pdf) HPCA'21
 要解决的问题：现在Heterogeneous Memory 越来越流行，用HM实现DNN training achieve larger memory capacity
@@ -309,26 +310,68 @@ based on DNN topology[7-10] / detailed domain knowledge [5][6][11]
 方法：在heterogeneous memory上（GPU,CPU,DRAM）上allow model scale without requiring model code refactoring / memory-centric tiling 解决单层过大的问题/ bandwidth-centric partitioning 根据device带宽来决定分区/ overlap-centric design (把offload跟communication尽量并行运算)
 
 [Xupeng](Xupeng.pdf) SIGMOD'21
+要解决的问题：All-reduce architecture in heterogeneous environment. (distributed ML)
 
-[Oliver](Oliver.pdf) NIPS'21
+[Oliver](Oliver.pdf) NIPS'21 （formal definition）
+要解决的问题：save memory during the training phase of DNN.
+其他方法1：parallelism-based memory optimization
+可以分为data parallism & model parallelism （前者distribute batch，后者distribute model）
+weights replica / collective communications
+其他方法2：rematerialization: trade memory for computation time
+其他方法3：offloading: trade memory for data movements.
+方法：combination of rematerialization and activation offloading.
+假设：single GPU
 
 [FlashNeuron](FlashNeuron.pdf) FAST 21
+要解决的问题：memory capacity wall
+方法：utilize SSD as training backing store. Direct communication between SSD and GPU utilizing GPUDirect.
+其他方法：Use of multiple GPUs
+问题： throughput--near linear/ cost--linear -> result: sub-optimal cost efficienct
+其他方法2： utilize host CPU memory as backing store 
+问题：training process on GPU contends with applications running on the CPU for memory bandwidth and capacity.
+
 
 [KLOCs](KLOCs.pdf) ASPLOS'21
+Heterogenous memory management
+key idea: 当前的操作系统主要关注应用数据的分层管理，而忽略了内核对象（如文件系统元数据、网络缓存等）的高效管理
 
 [PET](PET.pdf) OSDI'21
+要解决的问题：optimize tensor programs 
+用program transformation (fully equivalant / partially equivalant)
+提出的方法：用partially equvalant + correction kernel
 
 [DTR](DTR.pdf) ICLR'21
+问题：GPU memory limitation
+其他方法：static planning (assume static dataflow graph) 
+其他方法2：Memory manager 
+方法：greedy algorithm / make no assumptions about model's structure 
+假设： linear feedforward？
 
 [Bergman](Bergman.pdf) SIGPLAN'22
+要解决的问题：Efficient access to disaggregate memory
+用swap+cache-line access的混合模式，把冷数据依旧放在remote memory，热数据swap回来
 
 [FlexHM](FlexHM.pdf) TACO'22
+two-level NUMA design / periodical interaction between memory performance monitoring / place hot/cold pages
 
-[POET](POET.pdf) ICML'22
+[POET](POET.pdf) ICML'22 (open-soiurce)
+Enable training large neural networks on memory-scarce battery-operated edge devices. (constrains on memory and runtime)
+(why training on edge? privacy)
+其他方法：Paging to auxilaiary memory & rematerialization 
+问题：significant increase in total energy consumption
+paging is energy-intensive and often less efficient than rematerialization 
+方法：use integer linear program to find energy-optimal solution / combine paging and rematerialization 
 
 [Unity](Unity.pdf) OSDI'22
+Goal: accelerate DNN training theough joint optimization of algebraic transformation and parallelization
+(虽然不是特别相关 但是内容可以读)
 
 [MoNet](MoNet.pdf) ICLR'22
+Goal: automatic framework that minimize both memory footprint and computational overhead of DNN.
+其他方法1：operator-level implementation changes
+hand-craft techniques, no one-size-fit-all recipe, different implementations perform best on different architecture.
+其他方法2：global, graph-level optimizations (checkpointing)
+方法：local+global
 
 [TSPLIT](TSPLIT.pdf) ICDE'22
 要解决的问题：DNN太大， device memory不够
@@ -406,8 +449,6 @@ b. pure GPU memory swapping-in/swapping out [6, 21, 24, 33, 45, 49–51, 55].
 方法：设计了一个DNN compiler，感觉主要是在考虑memory allocate和deallocate上的优化；基于onnx-mlir compiler 
 跟之前的比没有runtime overhead。
 假设: DNN, 面向Pytorch
-
-[Shaofu Lin](Shaofu%20Lin.pdf) HPCA'23
 
 [CachedArrays](CachedArrrays.pdf) IPDPS'24
 要解决的问题：data management in heterogeneous memory systems
