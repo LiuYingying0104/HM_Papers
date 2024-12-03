@@ -1,8 +1,8 @@
-[cuDNN](cuDNN.pdf) 2014
+[cuDNN](All/cuDNN.pdf) 2014
 optimized implementations for deep learning primitives
 方法：C-language API for deep learning workloads
 
-[vDNN](vDNN.pdf) MICRO'16
+[vDNN](All/vDNN.pdf) MICRO'16
 要解决的问题：模型太大 GPU内存不够 reduce memory usage of neural network  
 提到的其他方法1：network pruning/quantization  
 觉得他们不好的点：weights占比在整个memory usage中很小/loss of accuracy  
@@ -10,7 +10,7 @@ optimized implementations for deep learning primitives
 觉得他们不好的点：underutilize PCIe bandwidth/performance overhead  
 方法：要么直接release，要么offload to CPU Memory 之后再prefetch回来  
 
-[Sublinear Cost](Sublinear%20Cost.pdf) 2016
+[Sublinear Cost](All/Sublinear%20Cost.pdf) 2016
 要解决的问题：reduce memory consumption of DNN training
 方法：用computation换memory, drop intermediate result. 针对于CNN和RNN
 提到的其他方法1： swapping 
@@ -18,13 +18,13 @@ optimized implementations for deep learning primitives
 认为自己这一派好的原因：doesn't need additional communication over PCI-E/ save bandwidth
 statement：size of parameters are relatively small comparing to size of the intermediate feature maps
 
-[BPTT](BPTT.pdf) NIPS'16
+[BPTT](All/BPTT.pdf) NIPS'16
 要解决的问题：reduce memory consumption through backpropogation for RNN.
 方法：dynamic programming
 优点： tightly fit to almost any user-specified memory constraints
 其实也是trade memory for computation time
 
-[Thermostat](Thermostat.pdf) ASPLOS'17
+[Thermostat](All/Thermostat.pdf) ASPLOS'17
 要解决的问题：memory placement policy. 有新的storage technique，利用好two-tier memory system可以有net cost的improvement
 其他的方法： naive policy（place pages into slow memory based on Access bits）
 觉得它不好的地方：severe performance degradation
@@ -36,7 +36,7 @@ two-tier memory的两种做法：
 具体做法：continuously sample small fraction of pages, estimates page access rate by spatial extrapolation
 用TLB miss的信息 as proxy for LLC misses/ correction mechanism.
 
-[Bandana](Bandana.pdf) MLsys'18
+[Bandana](All/Bandana.pdf) MLsys'18
 要解决的问题：reduce DRAM footprint of embeddings；two-tier memory--DRAM & NVM
 方法：
 1. 把会一起读的store在一起；（我觉得是相当于把vector怎么分布成为一个block）
@@ -44,7 +44,7 @@ two-tier memory的两种做法：
 文中的发现：如果要maximize bandwidth，需要4KB以上的read
 假设：需要用到past access patterns of embedding vectors，针对的是facebook的recommandation DNN，没有普适性
 
-[Superneurons](SuperNeurons.pdf) SIGPLAN'18
+[Superneurons](All/SuperNeurons.pdf) SIGPLAN'18
 要解决的问题: GPU DRAM size limitation
 方法: dynamic GPU memory scheduling runtime，把tensor作为unit，也有offload的部分
 提到的其他方法1：static memory reduction （Caffe 和tensorflow内置的）
@@ -57,7 +57,7 @@ two-tier memory的两种做法：
 提到的其他方法5：swap long-lived data from GPU to CPU, 没好好利用data communications
 所有的：没有把memory和training speed平衡好
 
-[Chen Meng](Chen%20Meng.pdf)  In Proc. of ML Systems Workshop in NIPS.
+[Chen Meng](All/Chen%20Meng.pdf)  In Proc. of ML Systems Workshop in NIPS.
 要解决的问题：model size too big for a single GPU
 方法： dataflow-graph based/swapping 有特别针对于seq2seq的优化 / integrate into tensorflow 
 提到的其他方法：model parallelism
@@ -72,7 +72,7 @@ two-tier memory的两种做法：
 提到的其他方法5：re-computation （MXNet）
 认为不好的地方：对于dynamic memory allocation，没法直接用
 
-[moDNN](moDNN.pdf) DATE'18
+[moDNN](All/moDNN.pdf) DATE'18
 要解决的问题：optimize memory usage in DNN training 
 方法：修改DNN training code to match any given memory budget / offloading + prefetching /新的策略可以省memory
 把4的几种结合起来
@@ -87,7 +87,7 @@ static memory allocation的缺点（我的理解）：
 个人觉得这里的缺点主要来自基于static allocation
 2. long live interval的会一直占据资源不释放，占据了很多内存。个人觉得跟recompute的好处 或者offload的好处是对应的。
 
-[Tflms](TFLMS.pdf) 2018
+[Tflms](All/TFLMS.pdf) 2018
 要解决的问题：GPU memory limitation for large DNN
 方法：rewrite computational graph of a NN, swapping/ module in Tensorflow
 其他方法1：reuse memory regions / compress a neural network/ use low precision
@@ -96,7 +96,7 @@ static memory allocation的缺点（我的理解）：
 觉得3好的原因：可以训练更大的模型 / 可以apply到any neural network上
 其他方法4：unified Memory (performance very pool)
 
-[Gist](Gist.pdf) ISCA'18
+[Gist](All/Gist.pdf) ISCA'18
 要解决的问题：GPU main memory bottleneck
 方法：DNN-layer-specific optimizations to reduce feature maps / encode representation and decode when use in backpropogation
 其他方法1：reduce model size
@@ -108,7 +108,7 @@ static memory allocation的缺点（我的理解）：
 其他方法4：re-compute
 认为不好的地方：long time re-compute
 
-[DRAGON](DRAGON.pdf) SC'18
+[DRAGON](All/DRAGON.pdf) SC'18
 要解决的问题：dataset太大，需要用NVMe设备
 方法：unified memory 用page fault 
 提到的其他方法1：hardware -- hardware modification
@@ -122,7 +122,7 @@ UM--memory limited by host memory
 2. software-based approaches: user-level APIs along with runtimes 缺点：调用API时比较麻烦
 3. OS and hardware-level: memory management with hardware modifications
    
-[Layer-Centric](Layer-Centric.pdf) Archit. Code Optim 2018 (bad writing**)
+[Layer-Centric](All/Layer-Centric.pdf) Archit. Code Optim 2018 (bad writing**)
 要解决的问题：running an extreme-scale model in a signgle GPU 
 方法：runtime data placement strategy, memory reuse
 其他方法1：model quantization and compression/ network pruning
@@ -141,7 +141,7 @@ UM--memory limited by host memory
 3. Loss function layer 
 4. Regularization function layer (dropout / batch normalization)
 
-[Zhang Junzhe](Zhang%20Junzhe.pdf) 2019
+[Zhang Junzhe](All/Zhang%20Junzhe.pdf) 2019
 要解决的问题：GPU limited memory size
 其他方法1: model compression
 问题：degrade model accuracy
@@ -159,10 +159,10 @@ UM--memory limited by host memory
 paging on GPU 需要改硬件/driver 
 
 
-[Nimble](Nimble.pdf) ASPLOS'19
+[Nimble](All/Nimble.pdf) ASPLOS'19
 要解决的问题：page migration for tiered memory system
 
-[Layup](Layup.pdf) TACO'19 (这篇写得挺细的)
+[Layup](All/Layup.pdf) TACO'19 (这篇写得挺细的)
 要解决的问题：GPU memory limitation
 其他方法1：model parallel (divide-and-conquer strategy)
 问题：introduce much more complexity into the construction of distriburted models 
@@ -173,14 +173,14 @@ paging on GPU 需要改硬件/driver
 假设：基于single GPU 
 方法：multi-type data reuse 
 
-[OC-DNN](OC-DNN.pdf) HiPC'19 (有点没看懂)
+[OC-DNN](All/OC-DNN.pdf) HiPC'19 (有点没看懂)
 要解决的问题：out-of-core DNN training, GPU memory limitation
 vDNN的limitation：需要manual effort
 Unified memory：time performance
 假设：single GPU
-方法： develop UM primitives.
+方法：develop UM primitives.
 
-[CheckMate](checkmate.pdf) 2019
+[CheckMate](All/checkmate.pdf) 2019
 Automatic rematerialize large neural network optimally (应该就是re-compute)
 goal: fit in an arbitrary network with memory budget while incurring the minimal additional runtime penalty from recomputation
 其他方法1：checkpointing and rematerialization
@@ -189,7 +189,7 @@ goal: fit in an arbitrary network with memory budget while incurring the minimal
 其他方法4：activation compression (reduce accuracy)
 假设：需要computation graph 
 
-[Buddy Compression](Buddy%20Compression.pdf) International Symposium on Computer Architecture, 2020
+[Buddy Compression](All/Buddy%20Compression.pdf) International Symposium on Computer Architecture, 2020
 Goal: increase effective GPU memory capacity and bandwidth.
 方法：memory compression 采用一种分级压缩策略，按数据的重要性和冗余性分层处理，动态调整压缩比。
 显存中的数据被分为多个小块（例如 128 字节块），每个块单独进行压缩和解压缩。
@@ -199,7 +199,7 @@ IBM Large model support:
 1. https://github.com/IBM/ 
 2. https://www.ibm.com/docs/en/wmlce/1.6.0?topic=gsmf-getting-started-tensorflow-large-model-support-tflms-v2
 
-[KARMA](KARMA.pdf) SC'20
+[KARMA](All/KARMA.pdf) SC'20
 其他方法1：model parallelism （viable approach to...）
 问题：significant modifictaion of source code / complex, intrusive and enforce a non-trival bound on minimum number of GPUs for large models
 其他的方法2：out-of-core (swapping)
@@ -208,13 +208,13 @@ IBM Large model support:
 问题：有bound / could not be used to improve performance in distributed training / swap 放在distribute上面会有冲突
 方法： layer swapping+redundant recomputing / support multi-GPU 
 
-[AntMan](Antman.pdf) OSDI'20
+[AntMan](All/Antman.pdf) OSDI'20
 schedule deep learning jobs on large-scale GPUs 
 
-[DeepSpeed](DeepSpeed.pdf) KDD'20
+[DeepSpeed](All/DeepSpeed.pdf) KDD'20
 tutorial: fastest BERT training
 
-[GTBM](GTBM.pdf) HPDC'20
+[GTBM](All/GTBM.pdf) HPDC'20
 要解决的问题：GPU memory limitation
 属于的派别：offloading and prefetching feature maps
 其他方法1：reduce model size
@@ -225,10 +225,10 @@ tutorial: fastest BERT training
 问题：1-vDNN和superneurons的缺点：不适用于non-linear networks 
 2-memory fragmentation problem （which has different data size, varied resident duration, and dynamic reference counts, interleave with layers which have simple dependencies)
 
-[Sage](Sage.pdf) VLDB'20
+[Sage](All/Sage.pdf) VLDB'20
 parallel graph analytics
 
-[AutoTM](AutoTM.pdf) ASPLOS'20
+[AutoTM](All/AutoTM.pdf) ASPLOS'20
 要解决的问题：模型太大，DRAM不够
 提到的其他方法1：用SSD做backing storage [13][14]
 提到的其他方法2：memory management between CPU and GPU [8][44]
@@ -237,7 +237,7 @@ parallel graph analytics
 别的文章觉得它不好的点：kernel computation and its tensor accesses are coupled as one execution unit. 
 Tensor-swap operation cannot be decoupled from its kernel, thereby losing an optimization opportunity of overlaping tensor swapping with an independent kernel's execution.
 
-[SwapAdvisor](SwapAdvisor.pdf) ASPLOS'20
+[SwapAdvisor](All/SwapAdvisor.pdf) ASPLOS'20
 要解决的问题：模型太大，GPU memory不够，existing work不够general，无法适应所有的models
 提到的其他方法1：lower-precision floating point/compression model parameter/quantization
 觉得他们不好的点：affect model accuracy/需要heavy hyper-parameter tuning
@@ -252,7 +252,7 @@ joint optimization over operator scheduling, memory allocation and swapping
 假设条件：static dataflow graph with no control-flow primitives / single GPU
 其他：文章把model的memory consumption分成三个类别：model parameters/intermediate results/scratch space
 
-[Capuchin](Capuchin.pdf) ASPLOS'20
+[Capuchin](All/Capuchin.pdf) ASPLOS'20
 要解决的问题：模型太大，GPU on-board memory不够
 提到的方法1：swapping 用CPU DRAM作为external memory
 提到的方法2：recomputing 需要用到的时候再recompute
@@ -271,7 +271,7 @@ Programming中有两个mode：1. eager mode（对应于imperative programming）
 1. graph mode（对应于declarative programming）before execution，computation graph is built （例子：TensorFlow1.0）
 假设：checkpointing scheme依赖于static model architecture (or infer from an initial profiling batch)
 
-[Sentinel](Sentinel.pdf) HPCA'21
+[Sentinel](All/Sentinel.pdf) HPCA'21
 要解决的问题：现在Heterogeneous Memory 越来越流行，用HM实现DNN training achieve larger memory capacity
 提到的其他方法1：用 CPU-side system memory来扩容[5-11] / 用persistent memory来扩CPU的容 
 based on DNN topology[7-10] / detailed domain knowledge [5][6][11]
@@ -280,7 +280,7 @@ based on DNN topology[7-10] / detailed domain knowledge [5][6][11]
 方法：dynamic profiling / OS / runtime-level profiling / performance model (让migration跟DNN training同时进行) 
 其他：面向的是tensorflow
 
-[ZeRO-Offload](ZeRO-Offload.pdf) ATC'21
+[ZeRO-Offload](All/ZeRO-Offload.pdf) ATC'21
 要解决的问题：large model training
 提到的其他方法1：(scale-out training) pipeline parallelism/ model parallelism/ ZeRO [5,28,7,10,21]
 觉得不好的地方： having enough GPU devices （总量还是要够的）
@@ -293,7 +293,7 @@ based on DNN topology[7-10] / detailed domain knowledge [5][6][11]
 方法：主要是offload一些计算和memory到CPU中，集成到了pytorch的库当中，并支持多个GPU并行
 其他：把内存分成了model states和residual states。我觉得可以理解为静态和动态
 
-[Zico](Zico.pdf) ATC'21
+[Zico](All/Zico.pdf) ATC'21
 要解决的问题：reduce system-wide memory consumption for concurrent training （GPU Sharing）
 提到的方法派别1：temporally multiplexing [26,43,44]
 觉得这个派别不好的地方：大多数时候计算资源没有被充分利用
@@ -302,17 +302,17 @@ based on DNN topology[7-10] / detailed domain knowledge [5][6][11]
 方法： forward时候memory usage在增加，backward时候memory usage在减少，因此可以共享一个memory pool，应该是用一个GPU kernel去monitor memory allocate和release的event，然后再用scheduler去schedule
 其他：面向的是tensorflow
 
-[ZeRO-Infinnity](ZeRO-Infinity.pdf) SC'21 （这个是ZeRO-Offload的延续）
+[ZeRO-Infinnity](All/ZeRO-Infinity.pdf) SC'21 （这个是ZeRO-Offload的延续）
 要解决的问题：模型太大 GPU内存不够
 1. How do we support the next 1000x growth in model size, going from models like GPT-3 with 175 billion parameters to models with hundreds of trillions of parameters?
 2. How can we make large models of today accessible to more data scientists who don’t have access to hundreds to GPUs？
 3. Can we make large model training easier by eliminating the need for model refactoring and multiple forms of parallelism?
 方法：在heterogeneous memory上（GPU,CPU,DRAM）上allow model scale without requiring model code refactoring / memory-centric tiling 解决单层过大的问题/ bandwidth-centric partitioning 根据device带宽来决定分区/ overlap-centric design (把offload跟communication尽量并行运算)
 
-[Xupeng](Xupeng.pdf) SIGMOD'21
+[Xupeng](All/Xupeng.pdf) SIGMOD'21
 要解决的问题：All-reduce architecture in heterogeneous environment. (distributed ML)
 
-[Oliver](Oliver.pdf) NIPS'21 （formal definition）
+[Oliver](All/Oliver.pdf) NIPS'21 （formal definition）
 要解决的问题：save memory during the training phase of DNN.
 其他方法1：parallelism-based memory optimization
 可以分为data parallism & model parallelism （前者distribute batch，后者distribute model）
@@ -322,7 +322,7 @@ weights replica / collective communications
 方法：combination of rematerialization and activation offloading.
 假设：single GPU
 
-[FlashNeuron](FlashNeuron.pdf) FAST 21
+[FlashNeuron](All/FlashNeuron.pdf) FAST 21
 要解决的问题：memory capacity wall
 方法：utilize SSD as training backing store. Direct communication between SSD and GPU utilizing GPUDirect.
 其他方法：Use of multiple GPUs
@@ -331,30 +331,30 @@ weights replica / collective communications
 问题：training process on GPU contends with applications running on the CPU for memory bandwidth and capacity.
 
 
-[KLOCs](KLOCs.pdf) ASPLOS'21
+[KLOCs](All/KLOCs.pdf) ASPLOS'21
 Heterogenous memory management
 key idea: 当前的操作系统主要关注应用数据的分层管理，而忽略了内核对象（如文件系统元数据、网络缓存等）的高效管理
 
-[PET](PET.pdf) OSDI'21
+[PET](All/PET.pdf) OSDI'21
 要解决的问题：optimize tensor programs 
 用program transformation (fully equivalant / partially equivalant)
 提出的方法：用partially equvalant + correction kernel
 
-[DTR](DTR.pdf) ICLR'21
+[DTR](All/DTR.pdf) ICLR'21
 问题：GPU memory limitation
 其他方法：static planning (assume static dataflow graph) 
 其他方法2：Memory manager 
 方法：greedy algorithm / make no assumptions about model's structure 
 假设： linear feedforward？
 
-[Bergman](Bergman.pdf) SIGPLAN'22
+[Bergman](All/Bergman.pdf) SIGPLAN'22
 要解决的问题：Efficient access to disaggregate memory
 用swap+cache-line access的混合模式，把冷数据依旧放在remote memory，热数据swap回来
 
-[FlexHM](FlexHM.pdf) TACO'22
+[FlexHM](All/FlexHM.pdf) TACO'22
 two-level NUMA design / periodical interaction between memory performance monitoring / place hot/cold pages
 
-[POET](POET.pdf) ICML'22 (open-soiurce)
+[POET](All/POET.pdf) ICML'22 (open-soiurce)
 Enable training large neural networks on memory-scarce battery-operated edge devices. (constrains on memory and runtime)
 (why training on edge? privacy)
 其他方法：Paging to auxilaiary memory & rematerialization 
@@ -362,18 +362,18 @@ Enable training large neural networks on memory-scarce battery-operated edge dev
 paging is energy-intensive and often less efficient than rematerialization 
 方法：use integer linear program to find energy-optimal solution / combine paging and rematerialization 
 
-[Unity](Unity.pdf) OSDI'22
+[Unity](All/Unity.pdf) OSDI'22
 Goal: accelerate DNN training theough joint optimization of algebraic transformation and parallelization
 (虽然不是特别相关 但是内容可以读)
 
-[MoNet](MoNet.pdf) ICLR'22
+[MoNet](All/MoNet.pdf) ICLR'22
 Goal: automatic framework that minimize both memory footprint and computational overhead of DNN.
 其他方法1：operator-level implementation changes
 hand-craft techniques, no one-size-fit-all recipe, different implementations perform best on different architecture.
 其他方法2：global, graph-level optimizations (checkpointing)
 方法：local+global
 
-[TSPLIT](TSPLIT.pdf) ICDE'22
+[TSPLIT](All/TSPLIT.pdf) ICDE'22
 要解决的问题：DNN太大， device memory不够
 提到的方法1：distributed system [20-22]
 觉得不好的点：bring high communication costs/ increase system complexity
@@ -384,7 +384,7 @@ hand-craft techniques, no one-size-fit-all recipe, different implementations per
 方法：break operation boundary （micro-tensor）/ computation graph profile
 假设：应该也是基于静态的computation graph的
 
-[TMOF](TMOF.pdf) HPCA'23
+[TMOF](All/TMOF.pdf) HPCA'23
 要解决的问题：用host memory作为external memory来swap tensor，但是在data-parallel training system中效果不佳。
 提到的其他方法1： swapping-based techniques [16,19,20,36,41,43,47]
 其中[43]和[47]被认为是layer-wise （static computational graph）
@@ -397,7 +397,7 @@ contention-avoidance techniques: disjoint swapping (select disjoint sets of swap
 假设：DNN，面向pytorch。感觉它的performance gain基本上来自于contention-avoidance
 其他：关于distributed model training--BSP(bulk synchronous parallelism) 每个GPU有自己的gradient set，然后每n个training iterations之后gradient会累计
 
-[DeepUM](DeepUM.pdf) ASPLOS'23
+[DeepUM](All/DeepUM.pdf) ASPLOS'23
 要解决的问题：用CUDA Unified Memory来解决GPU memory不够的问题
 提到的其他方法1：data compression [6, 10, 18, 26, 34], 
 提到的其他方法2： mixed-precision arithmetic [11, 17, 28]
@@ -414,7 +414,7 @@ b. pure GPU memory swapping-in/swapping out [6, 21, 24, 33, 45, 49–51, 55].
 换句话来说，single memory address space that can be accessed by both CPU and GPU / GPU 处理page fault是以UM Block为单位的（512 Pages)
 提出UM的motivation是GPU thread不能直接access CPU的memory space，所以需要programmer manually move。move的过程中会有PCIe上面overhead的问题
 
-[G10](G10.pdf) MICRO'23
+[G10](All/G10.pdf) MICRO'23
 要解决的问题：hard to meet the scalability requirement of deep learning workloads
 提到的其他方法1：expand limited GPU memory with flash memory. [67,68,61,19,21] 这些感觉是偏向technique方面的，bring Flash closer to GPUs
 觉得他们不好的点：limited bandwidth by the PCIe interface
@@ -425,7 +425,7 @@ b. pure GPU memory swapping-in/swapping out [6, 21, 24, 33, 45, 49–51, 55].
 其他：因为需要融合了SSD，所以需要修改driver。但是NVIDIA driver不开源，因此需要用到simulator 
 假设：single GPU，测试的是传统DNN和transformer
 
-[HOME](HOME.pdf) IEEE Transaction on Computers 23
+[HOME](All/HOME.pdf) IEEE Transaction on Computers 23
 要解决的问题：GPU Memory not enough  
 提到的其他方法1：data compression
 觉得它不好的地方：loss accuracy / incur significant time overhead
@@ -437,7 +437,7 @@ b. pure GPU memory swapping-in/swapping out [6, 21, 24, 33, 45, 49–51, 55].
 方法：(novelty) consider holistic DNN model information; 三个action选一个--swapping recomputation retaining
 假设：面向pytorch; 没有在real hardware platform上部署，用了一个time-cost model来predict大概需要的时间
 
-[Occamy](Occamy.pdf) DAC'23
+[Occamy](All/Occamy.pdf) DAC'23
 要解决的问题：reduce memory usage of DNN without affecting accuracy
 其他方法1：memory offloading [3,4,5,6]
 其他方法2：recomputation[4,6]
@@ -450,14 +450,14 @@ b. pure GPU memory swapping-in/swapping out [6, 21, 24, 33, 45, 49–51, 55].
 跟之前的比没有runtime overhead。
 假设: DNN, 面向Pytorch
 
-[CachedArrays](CachedArrrays.pdf) IPDPS'24
+[CachedArrays](All/CachedArrrays.pdf) IPDPS'24
 要解决的问题：data management in heterogeneous memory systems
 Algorithm: 7
 Application: 9, 13 (11,12,10,37) manually determine the reuse pattern and figure out a suitable data movement scheme to change the algorithm
 Compiler: 8, 3, 14, 15 scalability and generalization problems
 OS: 16-26 don't take into account future information about the data use and semantic information from the Application
 
-[MAGIS](MAGIS.pdf) ASPLOS'24
+[MAGIS](All/MAGIS.pdf) ASPLOS'24
 要解决的问题：memory optimization for DNN
 第一类：graph scheduling
 其他的方法1：rematerialization [5,10,17,18,24,27–29,37,38,47]
@@ -471,22 +471,44 @@ OS: 16-26 don't take into account future information about the data use and sema
 认为他们不好的地方：complexity太大；trade-off: latency和memory
 
 
-[GMT](GMT.pdf) ASPLOS'24
+[GMT](All/GMT.pdf) ASPLOS'24
 要解决的问题：application working sets grow，GPU需要access much larger data capacities
 一类方法：UVM 问题：没有扩展到SSD
 一类方法：扩展到了SSD的 问题：没有绕过CPU的控制，不能直接访问SSD
 
-[DeepTM](DeepTM.pdf)  IEEE TRANSACTIONS ON PARALLEL AND DISTRIBUTED SYSTEMS 2-24
+[DeepTM](All/DeepTM.pdf)  IEEE TRANSACTIONS ON PARALLEL AND DISTRIBUTED SYSTEMS 2-24
+要解决的问题：：DNN training tensor management on heterogeneous memory
+Transform performance optimization problem into ILP.
+认为现有的swapping strategy的缺点：
+1. focus on analyzing single tensor characteristics (lifetime, tensor size), struggle to adapt to the diverse requirement of different DNN models.
+2. Global optimization solution is NP-hard
+3. Need real-time monitoring (reply pn static analysis, 说autoTM和STR用brute-force mathematical techniques to caculate allocation strategies)
+方法：offline+online training.
+1. group micro tensors with similar access patterns into the same page.
+2. allocate large tensors with comparable access frequencies to sequential pages.
+3. Adapt tensor heat to the current state.
+假设：CPU / GPU
 
+其他知识：memory access patterns during DNN training can be profiled using computational graphs. (static/dynamic)
 
 面向LLM：
-[InfiniGen](InfiniGen.pdf) OSDI'24
-[FlexGen](FlexGen.pdf) ICML'23
+[InfiniGen](All/InfiniGen.pdf) OSDI'24
+[FlexGen](All/FlexGen.pdf) ICML'23
 
 Instruction：
 读introduction和abstract：
-1. 在这个领域内最常被引述的方法有哪些？
+1. 在这个领域内最常被引述的方法有哪些？ 
+   1. vDNN
+   2. AutoTM
+   3. Sentinel
+   4. SuperNeurons
+   5. cuDNN
+   6. ……
 2. 这些方法可以分成哪些主要派别？
+   1. re-compute (rematerialization)
+   2. swapping (tiering)
+   3. compression (model compression/data compression)
+   4. memory optimization (change operator/ reuse memory)
 3. 每个派别的主要特色（含优点和缺点）是什么？
 4. 这个领域内大家认为重要的关键问题有哪些？有哪些特性是大家重视的优点？
 有哪些特性是大家在意的缺点？这些优点和缺点通常在哪些应用场合时会比较被重视？在哪些应用场合会比较不会被重视？
