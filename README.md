@@ -495,38 +495,3 @@ Transform performance optimization problem into ILP.
 [InfiniGen](All/InfiniGen.pdf) OSDI'24
 [FlexGen](All/FlexGen.pdf) ICML'23
 
-Instruction：
-读introduction和abstract：
-1. 在这个领域内最常被引述的方法有哪些？ 
-   1. vDNN
-   2. AutoTM
-   3. Sentinel
-   4. SuperNeurons
-   5. cuDNN
-   6. ……
-2. 这些方法可以分成哪些主要派别？
-   1. re-compute (rematerialization)
-   2. swapping (tiering)
-   3. compression (model compression/data compression)
-   4. memory optimization (change operator/ reuse memory)
-3. 每个派别的主要特色（含优点和缺点）是什么？
-4. 这个领域内大家认为重要的关键问题有哪些？有哪些特性是大家重视的优点？
-有哪些特性是大家在意的缺点？这些优点和缺点通常在哪些应用场合时会比较被重视？在哪些应用场合会比较不会被重视？
-
-按派别进行阅读main body：按时间先后顺序阅读
-1. 这篇论文主要假设是什么（跟现实情况是什么做对比）
-2. 这些假设下论文的好处在哪里
-3. 好处主要体现在哪些项目的简化上
-这一个派别的主要发展过程、主要假设、主要理论依据、主要成果
-这一派最适合什么时候使用、最不适合什么场合使用
-
-
-不同的场景：
-1. high-end data centers
-2. common computing platform for researchers and developers
-
-感觉很多都没有考虑OS方面的协作
-Design Method:
-1. Expert knowledge
-2. Heurestic (Greedy, ILP(high algorithm complexity), PSO)
-3. Meta-Heurestic (genetic)
