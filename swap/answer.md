@@ -309,36 +309,89 @@ b-并没有动态地swap in/out,就是规定哪些参数offload到哪里，哪�
 targets: pytorch
 1-runtime:
 wapper functions，把GPU的allocation都转化到UM的allocation上
+所有会launch kernel的library function会加一个wrapper function
+manage execution ID table，在launch kernel前把这个execution id发给driver
+2-driver:
+intercept page fault, provide to lookup correlation tables and update correlation tables'
+Prefetching:
+work at UM block level
+两个correlation table: execution ID correlation table & UM block correlation table
+用一个start pointer 和 end pointer来指示什么时候结束这个kernel的prefetching，这个kernel prefetching结束之后
+去找下一个要执行的kernel，然后继续prefetch
+
+会有pre-evict：least recently migrate / 未来不会被访问到的（这个很熟悉 之前有work是做这个的）
+会invalidate UM blocks of inactive pytorch blocks（因为pytorch有自己的memory allocator）
+
+comment：本质上是把历史都record下来，我觉得还是profiling啊……
 
 1. 这篇论文主要假设是什么（跟现实情况是什么做对比）
+   1. training iteration是一直在重复的
+   2. 使用UM
 2. 这些假设下论文的好处在哪里
+   1. 没有boundary，理论上可以oversubscribe任意大小的model
 3. 好处主要体现在哪些项目的简化上
+   1. 不需要显式考虑tensor上的语义，只有block上的语义
 
 
 
 [G10](G10.pdf) MICRO'23
+三个部分组成：
+1-tensor vitality analyzer (需要compiler) sizes & lifetime [offline compile-time profiling] 是一个静态分析工具
+2-tensor migration scheduler （dynamic algorithm to find optimal solution）需要在修改code，inject instructions，修改的是GPU program
+3-unified memory system （GPU, host and SSD are integrated into a unified space) 修改driver
+用tensor size， storage bandwidth， host bandwidth去估计eviction和prefetch的时间
+
+1-evict
+对于evict的对象，用memory pressure减轻的程度和evict和prefetch的cost去算benefit-cost
+优先考虑swap到SSD上，bandwidth满了才会考虑swap到Host上
+iteratively search migration plan，直到满足memory budget
+
+2-prefetch的时间点
+由于evict之后GPU没那么满，G10就eagerly prefetch
+
 1. 这篇论文主要假设是什么（跟现实情况是什么做对比）
 2. 这些假设下论文的好处在哪里
 3. 好处主要体现在哪些项目的简化上
 
-
+comment: 算的是tensor，但是migrate的时候却是以page为单位的诶
 
 
 [TMOF](TMOF.pdf) HPCA'23
+based on eager execution pytorch framework and CUDA library
+在kernel execution的过程当中用Torch profiler obtain dynamic computational graph
+
+1-decision engine:选择哪些tensor被swap出去 分为online和offline
+a. online: 通过第一个iteration来确定reuse distance，从reuse distance最大的开始swap out，直到model size fit
+b. offline: profiling run. 建模成MILP问题，跟autoTM很像，不一样的是把kernel和tensor access分离开来
+
+2-channel contention avoidance
+a. disjoint swapping (我觉得这是针对swap in来说的)
+b. bidirectional overlapping （我看到里面的design是用一个token，避免同时swap out）
+
 1. 这篇论文主要假设是什么（跟现实情况是什么做对比）
 2. 这些假设下论文的好处在哪里
 3. 好处主要体现在哪些项目的简化上
 
-
-
-[CachedArrays](CachedArrrays.pdf) IPDPS'24
-1. 这篇论文主要假设是什么（跟现实情况是什么做对比）
-2. 这些假设下论文的好处在哪里
-3. 好处主要体现在哪些项目的简化上
-
+comment：torch profiler也会有一定的overhead
 
 
 [DeepTM](DeepTM.pdf)  IEEE TRANSACTIONS ON PARALLEL AND DISTRIBUTED SYSTEMS 2-24
+Base on: Linux and Tensorflow
+三个部分：
+1-DeepTM Core
+    Profiler: static computational graph
+    Optimizer: formulate tensor management problem and provides optimization
+    Allocator: allocate in HM 在每个内核开始时，将访问次数最多的张量分配到同一个页面
+    根据重用距离（rk_t）升序排列张量，并将其分配到连续的内存页面上
+    为了进一步优化内存带宽利用，DeepTM使用“连续迁移”策略，在迁移操作时将相邻的张量合并为一个事务进行迁移。
+    Migrator: migrate in HM
+    Aggregator: organize in page level
+2-Heterogeneous Memory System
+3-Kernel Computing
+
+DRL:input 是以单个tensor为单位，包括它现在的位置，heat，和DRAM和PM中的left memory的多少，来决定action，是否migrate。根据migrate的成本，以及是否会造成OOM给它reward。
+不断做出这样的action，知道training epoch结束，会给个总的评价
+
 1. 这篇论文主要假设是什么（跟现实情况是什么做对比）
 2. 这些假设下论文的好处在哪里
 3. 好处主要体现在哪些项目的简化上
