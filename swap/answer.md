@@ -174,51 +174,142 @@ operation index map到GPU分配的内存上
    1. 不需要考虑conv layer本身算法workspace大小差异
 
 
-[GTBM](GTBM.pdf) HPDC'20
-1. 这篇论文主要假设是什么（跟现实情况是什么做对比）
-2. 这些假设下论文的好处在哪里
-3. 好处主要体现在哪些项目的简化上
+[GTBM](GTBM.pdf) HPDC'20 
+Dymem host-side runtime interfaces with GPU. （这里说runtime不是说online scheduling）
+workflow:
+1-graph constructor
+2-tensor scheduler 两个cuda stream: 跟vDNN类似 用完了就offload。
+prefetch的策略：不早于两个conv prefetch
+3-unified GPU memory pool (为了减少fragmentation)
+把tensor分成三个类型：1-ref一次的 （low）2-临时的(high) 3-复用的 （motivation应该也是根据lifetime）
 
+1. 这篇论文主要假设是什么（跟现实情况是什么做对比）
+   1. 应该是跟vDNN的框架类似，直接用cuda程序编写网络做测试？并不依赖于任何框架
+   2. 考虑的网络种类不包含与RNN
+2. 这些假设下论文的好处在哪里
+   1. 简单的prefetech策略是有效的
+3. 好处主要体现在哪些项目的简化上
+   1. fragementation
 
 
 [AutoTM](AutoTM.pdf) ASPLOS'20
+workflow:
+1-DNN model给nGraph，检测nodes，tensors，和使用的kernel
+2-record kernel execution time
+3-把profiling的信息和DAG都给memory optimier (Julia)
+提出了两种assignment的方式：1-static 要么在PMM要么在DRAM 2-swapping
+正式的定义和数学建模,用Gurobi求解
+
+这个建模的过程当中并没有考虑到memory fragmentation，方法是先用schedule出来的结果跑一下，如果exceed了，那就降低memory budget重新schedule。
+
 1. 这篇论文主要假设是什么（跟现实情况是什么做对比）
+   1. no data-dependent control behavior
+   2. tensors are immutable
 2. 这些假设下论文的好处在哪里
+   1. 可以建模并求出解，因为是NP-complete
 3. 好处主要体现在哪些项目的简化上
 
 
 [SwapAdvisor](SwapAdvisor.pdf) ASPLOS'20
+input: dataflow graph (topological order, mapping in memory pool, nums)
+选一个合法的schedule和memory allocation作为初始值，提供给swapAdviser，然后加swap in/out的operator
+然后用一个simulator去模拟overall execution time
+用GA去提出新的plan，然后再模拟再优化 （用softmax去select children）crossover point randomly choose，mutate是基于已有的dataflow graph，遍历所有节点，有概率P发生变异
+memory allocation也是类似的建模，设计了方法缩小搜索空间
+swap-out: 移除未来最久不用的，用double scan来确定初始的时候GPU内会存在哪些tensor
+swap-in: 在保证safe的前提下：complete a pair of swap out and swap-in as early as possible
+Simulator是用了真实的operator的执行时间来算的
+implementation: 用Python写了遗传算法和simulator，修改了MXNet
 1. 这篇论文主要假设是什么（跟现实情况是什么做对比）
+   1. 知道每个kernel的执行时间
+   2. 有dataflow graph
 2. 这些假设下论文的好处在哪里
+   1. simulator比较精确
 3. 好处主要体现在哪些项目的简化上
 
 
 [Sentinel](Sentinel.pdf) HPCA'21
+profiling: one training step
+OS-level: memory access at page level （通过poisoining PTE，写protection fault handler来implement）
+Tensorflow-runtime: get tensor size and lifetime. / Add anotation to get DNN topology
+一个page只能对应于一个tensor，把tensor和page中的位置对应起来，让OS知道page/tensor是属于哪个layer的
+Design:
+1-以layer为单位来做tensor management
+2-把tensor分成short-lived和long-lived
+
+Workflow：
+1-dynamic profiling （integrate into Tensorflow）
+2-reorganaize memory allocation 
+   a-short live 根据layer allocate page
+   b-long-lived 根据access的次数和layer分配位置, migration interval length是固定的，用GA或者Markov Chain MC来确定哪个interval是最好的。我觉得这个interval定义的有点抽象，应该就是个超参，来大概migration会花多长的时间。
+focus on static graph不是因为需要静态分析之类的，是因为static graph的control flow是恒定的，在这个前提下training 的每个iteration其实都是相同的。
+这个文章也兼容了dynamic graph和control dependency，如果有新的branch，那么重新profile
+如何应用到GPU上？
+1-用pinned memory，让GPU实际的访问是在CPU上完成的，这样可以profile
+2-profile结束之后把那些tensor allocate到GPU上去，通过pointer switch.
+
+implementation：
+1-OS kernel for profiling （intercept protection fault）
+2-Tensoflow Runtime 
+   start_profile()
+   end_profile()
+   add_layer()用于标记layer之间间隙，提供hint给OS
+三个thread：1.分类+算migration interval 2. swap in 3. swap out
+GPU上的implementation也是遵循vDNN一样的范式，去create CUDA stream
+
 1. 这篇论文主要假设是什么（跟现实情况是什么做对比）
+   1. the fast memory is at least larger than the peak memory consumption of those short-lived tensors.
+   2. default version: static graph / CPU+Persistant memory
 2. 这些假设下论文的好处在哪里
 3. 好处主要体现在哪些项目的简化上
+
+comment: 说有很多small tensors with short lifetime
+那如果第一个training step就已经OOM了呢？ 它一开始是基于哪个framework呢？ 会有memory的lower bound
+本质上就是分类然后place，在一个固定的interval给它swap回来，我觉得这个固定的点不是很好，但文章中也解释了不用dynamic的原因
+
 
 
 [FlashNeuron](FlashNeuron.pdf) FAST 21
+是个library
+总共分成3个部分：
+1-allocation和deallocation 把要swap的分配在一边，不swap的分配在另一边，用P2P-DSA直接访问SSD
+2-Offload Scheduler. 需要profiling iteration，记录的信息有1-tensor size/ 2-offload的time 
+   3-compression ratio / 4-kernel execution time / 5-memory-resident object's total size
+   step 1:先offload几个，直到能满足memory budget，如果没有delay正常的computation process 就直接结束
+   step 2：如果找不到合适的，那就先用compression
+
+关于implementation，看了代码是在pytorch的基础上做了拓展，所以文中提到的用Caffe用计算图算lifetime应该是没实现过。这里lifetime我有疑问，文章说通过reference counting mechenism去追踪lifetime，应该也是需要在profiling过程当中才知道的呀，那memory allocation的时候应该还不知道lifetime，是后面会再修改吗？
+
 1. 这篇论文主要假设是什么（跟现实情况是什么做对比）
+   1. training iteration后面几个会和前面的保持一致
 2. 这些假设下论文的好处在哪里
 3. 好处主要体现在哪些项目的简化上
 
 
+Zero系列的三篇文章：
+https://basicv8vc.github.io/posts/zero
 [ZeRO-Offload](ZeRO-Offload.pdf) ATC'21
+是开源DeepSpeed PyTorch库的一部分
+优化的对象主要是模型参数、梯度还有optimizer的动量方差，跟很多相关的work focus在activation layer上都不一样
+https://www.deepspeed.ai/tutorials/zero-offload/ 
+a-切割CPU和GPU的任务，前向和反向传播的计算量由于和batch size以及模型大小成正比，因此放在GPU，而范数计算和模型参数更新等则只和模型大小成正比，因此放在CPU.
+b-并没有动态地swap in/out,就是规定哪些参数offload到哪里，哪些任务由CPU做，哪些由GPU做
 1. 这篇论文主要假设是什么（跟现实情况是什么做对比）
 2. 这些假设下论文的好处在哪里
 3. 好处主要体现在哪些项目的简化上
-
-
-
 [ZeRO-Infinnity](ZeRO-Infinity.pdf) SC'21 （这个是ZeRO-Offload的延续）
+同样是进行offload，ZeRO-Offload更侧重单卡场景，而ZeRO-Infinity侧重于工业场景
 1. 这篇论文主要假设是什么（跟现实情况是什么做对比）
 2. 这些假设下论文的好处在哪里
 3. 好处主要体现在哪些项目的简化上
 
 
 [DeepUM](DeepUM.pdf) ASPLOS'23
+由两个部分组成：1-DeepUM runtime / 2-DeepUM driver (Linux kernel module)
+targets: pytorch
+1-runtime:
+wapper functions，把GPU的allocation都转化到UM的allocation上
+
 1. 这篇论文主要假设是什么（跟现实情况是什么做对比）
 2. 这些假设下论文的好处在哪里
 3. 好处主要体现在哪些项目的简化上
